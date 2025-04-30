@@ -1,0 +1,161 @@
+{% extends 'stroke_unit/base.html' %}
+
+{% block title %}Consultation Details - Mobile Stroke Unit{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3">Consultation Details</h1>
+                <div>
+                    <a href="{% url 'stroke_unit:consultation_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Patient Information -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Patient Information</h5>
+                </div>
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2">{{ patient.name }}</h6>
+                    <p class="card-text">
+                        <strong>Age:</strong> {{ patient.age }}<br>
+                        <strong>Sex:</strong> {{ patient.sex }}<br>
+                        <strong>Chief Complaint:</strong> {{ patient.chief_complaint }}<br>
+                        <strong>Medical History:</strong> {{ patient.medical_history|linebreaks }}
+                    </p>
+                    <a href="{% url 'stroke_unit:patient_detail' patient.id %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-user me-1"></i>View Patient Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Consultation Details -->
+        <div class="col-md-8 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Consultation Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Status:</strong>
+                            {% if consultation.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% elif consultation.status == 'in_progress' %}
+                                <span class="badge bg-info">In Progress</span>
+                            {% elif consultation.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                            {% elif consultation.status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Neurologist:</strong> {{ consultation.neurologist.get_full_name }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Created:</strong> {{ consultation.created_at }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Last Updated:</strong> {{ consultation.updated_at }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Diagnosis:</strong>
+                        <p>{{ consultation.diagnosis|linebreaks }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <strong>Treatment Plan:</strong>
+                        <p>{{ consultation.treatment_plan|linebreaks }}</p>
+                    </div>
+                    <div>
+                        <strong>tPA Administered:</strong>
+                        {% if consultation.tpa_administered %}
+                            <span class="badge bg-success">Yes</span>
+                        {% else %}
+                            <span class="badge bg-danger">No</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clinical Data -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Clinical Data at Time of Consultation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Vital Signs -->
+                        <div class="col-md-6">
+                            <h6>Latest Vital Signs</h6>
+                            {% if vital_signs %}
+                                <table class="table table-sm">
+                                    <tr>
+                                        <th>Blood Pressure:</th>
+                                        <td>{{ vital_signs.blood_pressure_systolic }}/{{ vital_signs.blood_pressure_diastolic }} mmHg</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Heart Rate:</th>
+                                        <td>{{ vital_signs.heart_rate }} bpm</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Respiratory Rate:</th>
+                                        <td>{{ vital_signs.respiratory_rate }} /min</td>
+                                    </tr>
+                                    <tr>
+                                        <th>O2 Saturation:</th>
+                                        <td>{{ vital_signs.oxygen_saturation }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Temperature:</th>
+                                        <td>{{ vital_signs.temperature }}°C</td>
+                                    </tr>
+                                </table>
+                            {% else %}
+                                <p class="text-muted">No vital signs recorded</p>
+                            {% endif %}
+                        </div>
+
+                        <!-- NIHSS Score -->
+                        <div class="col-md-6">
+                            <h6>Latest NIHSS Score</h6>
+                            {% if nihss_score %}
+                                <div class="alert {% if nihss_score.score >= 4 %}alert-warning{% else %}alert-info{% endif %}">
+                                    <h4 class="alert-heading mb-2">Score: {{ nihss_score.score }}</h4>
+                                    {% if nihss_score.score >= 4 %}
+                                        <p class="mb-0">Patient may be eligible for tPA based on NIHSS score.</p>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted">No NIHSS score recorded</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Add any JavaScript functionality needed for the consultation detail page
+});
+</script>
+{% endblock %} 

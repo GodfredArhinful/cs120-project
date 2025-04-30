@@ -1,0 +1,203 @@
+{% extends 'stroke_unit/base.html' %}
+
+{% block title %}Consultations - Mobile Stroke Unit{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="h3 mb-0">Consultations</h1>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{% url 'stroke_unit:consultation_create' %}" class="btn btn-primary">
+            <i class="fas fa-stethoscope me-1"></i>New Consultation
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" class="form-control" name="search" placeholder="Search consultations..." value="{{ request.GET.search }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="status">
+                    <option value="">All Statuses</option>
+                    <option value="in_progress" {% if request.GET.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="sort">
+                    <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>Newest First</option>
+                    <option value="created_at" {% if request.GET.sort == 'created_at' %}selected{% endif %}>Oldest First</option>
+                    <option value="patient__name" {% if request.GET.sort == 'patient__name' %}selected{% endif %}>Patient Name A-Z</option>
+                    <option value="-patient__name" {% if request.GET.sort == '-patient__name' %}selected{% endif %}>Patient Name Z-A</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Apply</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Consultation List -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Patient</th>
+                        <th>Consulting Doctor</th>
+                        <th>Type</th>
+                        <th>Started</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for consultation in consultations %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'stroke_unit:patient_detail' consultation.patient.id %}" class="text-decoration-none">
+                                {{ consultation.patient.name }}
+                            </a>
+                        </td>
+                        <td>
+                            {{ consultation.consulting_doctor.get_full_name|default:consultation.consulting_doctor.username }}
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ consultation.consultation_type }}</span>
+                        </td>
+                        <td>{{ consultation.created_at|timesince }} ago</td>
+                        <td>
+                            {% if consultation.end_time %}
+                                {{ consultation.start_time|timesince:consultation.end_time }}
+                            {% elif consultation.start_time %}
+                                {{ consultation.start_time|timesince }} (Ongoing)
+                            {% else %}
+                                Not started
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if consultation.status == 'in_progress' %}
+                                <span class="badge bg-primary">In Progress</span>
+                            {% elif consultation.status == 'completed' %}
+                                <span class="badge bg-success">Completed</span>
+                            {% elif consultation.status == 'cancelled' %}
+                                <span class="badge bg-danger">Cancelled</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{{ consultation.status|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'stroke_unit:consultation_detail' consultation.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if consultation.status == 'in_progress' %}
+                                <button class="btn btn-sm btn-outline-success complete-consultation" data-consultation-id="{{ consultation.id }}">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                {% endif %}
+                                {% if consultation.status == 'pending' %}
+                                <button class="btn btn-sm btn-outline-primary start-consultation" data-consultation-id="{{ consultation.id }}">
+                                    <i class="fas fa-play"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <p class="text-muted mb-0">No consultations found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                Previous
+            </a>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+        </li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                {{ num }}
+            </a>
+        </li>
+        {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">
+                Next
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Auto-submit form when filters change
+        $('select[name="status"], select[name="sort"]').change(function() {
+            $(this).closest('form').submit();
+        });
+
+        // Handle consultation completion
+        $('.complete-consultation').click(function() {
+            const consultationId = $(this).data('consultation-id');
+            const button = $(this);
+            
+            if (confirm('Are you sure you want to mark this consultation as complete?')) {
+                $.post(`/api/consultations/${consultationId}/complete/`, function(data) {
+                    location.reload();
+                });
+            }
+        });
+
+        // Handle consultation start
+        $('.start-consultation').click(function() {
+            const consultationId = $(this).data('consultation-id');
+            const button = $(this);
+            
+            $.post(`/api/consultations/${consultationId}/start/`, function(data) {
+                location.reload();
+            });
+        });
+    });
+</script>
+{% endblock %} 

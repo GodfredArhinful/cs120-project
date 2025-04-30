@@ -1,0 +1,184 @@
+{% extends 'stroke_unit/base.html' %}
+
+{% block title %}Dashboard - Mobile Stroke Unit{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-4">Dashboard</h1>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <i class="fas fa-users mb-3"></i>
+                <h5 class="card-title">Active Patients</h5>
+                <h2 class="mb-0">{{ active_patients_count }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <i class="fas fa-stethoscope mb-3"></i>
+                <h5 class="card-title">Consultations Today</h5>
+                <h2 class="mb-0">{{ consultations_today }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <i class="fas fa-exclamation-circle mb-3"></i>
+                <h5 class="card-title">Critical Alerts</h5>
+                <h2 class="mb-0">{{ critical_alerts }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <i class="fas fa-clock mb-3"></i>
+                <h5 class="card-title">Avg Response Time</h5>
+                <h2 class="mb-0">{{ avg_response_time }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities and Alerts -->
+<div class="row">
+    <!-- Recent Patients -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Patients</h5>
+                <a href="{% url 'stroke_unit:patient_list' %}" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for patient in recent_patients %}
+                    <a href="{% url 'stroke_unit:patient_detail' patient.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ patient.name }}</h6>
+                            <small>{{ patient.created_at|timesince }} ago</small>
+                        </div>
+                        <p class="mb-1">{{ patient.chief_complaint }}</p>
+                        <small>Age: {{ patient.age }} | Sex: {{ patient.sex }}</small>
+                    </a>
+                    {% empty %}
+                    <p class="text-muted mb-0">No recent patients</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Alerts -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Alerts</h5>
+                <a href="{% url 'stroke_unit:alert_list' %}" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for alert in recent_alerts %}
+                    <div class="list-group-item {% if alert.alert_type == 'CRITICAL' %}list-group-item-danger{% endif %}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">
+                                {% if alert.alert_type == 'CRITICAL' %}
+                                <i class="fas fa-exclamation-circle text-danger"></i>
+                                {% elif alert.alert_type == 'WARNING' %}
+                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                {% else %}
+                                <i class="fas fa-info-circle text-info"></i>
+                                {% endif %}
+                                {{ alert.patient.name }}
+                            </h6>
+                            <small>{{ alert.created_at|timesince }} ago</small>
+                        </div>
+                        <p class="mb-1">{{ alert.message }}</p>
+                        {% if not alert.acknowledged %}
+                        <button class="btn btn-sm btn-outline-primary acknowledge-alert" data-alert-id="{{ alert.id }}">
+                            Acknowledge
+                        </button>
+                        {% else %}
+                        <small class="text-muted">
+                            {% if alert.acknowledged_by %}
+                                Acknowledged by {{ alert.acknowledged_by.get_full_name|default:alert.acknowledged_by.username }}
+                            {% else %}
+                                Acknowledged
+                            {% endif %}
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-muted mb-0">No recent alerts</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'stroke_unit:patient_create' %}" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-user-plus mb-2"></i>
+                            <br>New Patient
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'stroke_unit:consultation_create' %}" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-stethoscope mb-2"></i>
+                            <br>New Consultation
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'stroke_unit:vital_signs_create' %}" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-heartbeat mb-2"></i>
+                            <br>Record Vitals
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'stroke_unit:nihss_create' %}" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-clipboard-list mb-2"></i>
+                            <br>NIHSS Score
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Handle alert acknowledgment
+        $('.acknowledge-alert').click(function() {
+            const alertId = $(this).data('alert-id');
+            const button = $(this);
+            
+            $.post(`/api/alerts/${alertId}/acknowledge/`, function(data) {
+                const userName = '{{ user.get_full_name|default:user.username }}';
+                button.replaceWith(`<small class="text-muted">Acknowledged by ${userName}</small>`);
+                updateAlertCount();
+            });
+        });
+    });
+</script>
+{% endblock %} 

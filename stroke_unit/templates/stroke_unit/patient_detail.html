@@ -1,0 +1,383 @@
+{% extends 'stroke_unit/base.html' %}
+
+{% block title %}{{ patient.name }} - Mobile Stroke Unit{% endblock %}
+
+{% block content %}
+<!-- Patient Header -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="h3 mb-2">{{ patient.name }}</h1>
+        <p class="text-muted mb-0">
+            Age: {{ patient.age }} | Sex: {{ patient.sex }} | Admitted: {{ patient.created_at|date:"F j, Y, g:i a" }}
+        </p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <div class="btn-group">
+            <a href="{% url 'vital_signs_create' %}?patient={{ patient.id }}" class="btn btn-primary">
+                <i class="fas fa-heartbeat me-1"></i>Record Vitals
+            </a>
+            <a href="{% url 'nihss_create' %}?patient={{ patient.id }}" class="btn btn-primary">
+                <i class="fas fa-clipboard-list me-1"></i>NIHSS Score
+            </a>
+            <a href="{% url 'consultation_create' %}?patient={{ patient.id }}" class="btn btn-primary">
+                <i class="fas fa-stethoscope me-1"></i>New Consultation
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Content Tabs -->
+<ul class="nav nav-tabs mb-4" id="patientTabs" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" id="overview-tab" data-bs-toggle="tab" href="#overview" role="tab">
+            <i class="fas fa-info-circle me-1"></i>Overview
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="vitals-tab" data-bs-toggle="tab" href="#vitals" role="tab">
+            <i class="fas fa-heartbeat me-1"></i>Vital Signs
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="nihss-tab" data-bs-toggle="tab" href="#nihss" role="tab">
+            <i class="fas fa-clipboard-list me-1"></i>NIHSS Scores
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="consultations-tab" data-bs-toggle="tab" href="#consultations" role="tab">
+            <i class="fas fa-stethoscope me-1"></i>Consultations
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" id="alerts-tab" data-bs-toggle="tab" href="#alerts" role="tab">
+            <i class="fas fa-bell me-1"></i>Alerts
+        </a>
+    </li>
+</ul>
+
+<div class="tab-content" id="patientTabContent">
+    <!-- Overview Tab -->
+    <div class="tab-pane fade show active" id="overview" role="tabpanel">
+        <div class="row">
+            <!-- Patient Information -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Patient Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Medical History</dt>
+                            <dd class="col-sm-8">{{ patient.medical_history|linebreaks }}</dd>
+                            
+                            <dt class="col-sm-4">Chief Complaint</dt>
+                            <dd class="col-sm-8">{{ patient.chief_complaint|linebreaks }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Latest Vitals -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Latest Vital Signs</h5>
+                        <small class="text-muted">
+                            {% with latest_vitals=patient.vital_signs.last %}
+                            {% if latest_vitals %}
+                            {{ latest_vitals.recorded_at|timesince }} ago
+                            {% endif %}
+                            {% endwith %}
+                        </small>
+                    </div>
+                    <div class="card-body">
+                        {% with latest_vitals=patient.vital_signs.last %}
+                        {% if latest_vitals %}
+                        <div class="row text-center">
+                            <div class="col-6 col-md-3 mb-3">
+                                <h6 class="text-muted mb-1">Blood Pressure</h6>
+                                <h4>{{ latest_vitals.blood_pressure_systolic }}/{{ latest_vitals.blood_pressure_diastolic }}</h4>
+                            </div>
+                            <div class="col-6 col-md-3 mb-3">
+                                <h6 class="text-muted mb-1">Heart Rate</h6>
+                                <h4>{{ latest_vitals.heart_rate }}</h4>
+                            </div>
+                            <div class="col-6 col-md-3 mb-3">
+                                <h6 class="text-muted mb-1">Resp. Rate</h6>
+                                <h4>{{ latest_vitals.respiratory_rate }}</h4>
+                            </div>
+                            <div class="col-6 col-md-3 mb-3">
+                                <h6 class="text-muted mb-1">SpO2</h6>
+                                <h4>{{ latest_vitals.oxygen_saturation }}%</h4>
+                            </div>
+                        </div>
+                        {% else %}
+                        <p class="text-center text-muted mb-0">No vital signs recorded</p>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Latest NIHSS Score -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Latest NIHSS Score</h5>
+                        <small class="text-muted">
+                            {% with latest_nihss=patient.nihss_scores.last %}
+                            {% if latest_nihss %}
+                            {{ latest_nihss.recorded_at|timesince }} ago
+                            {% endif %}
+                            {% endwith %}
+                        </small>
+                    </div>
+                    <div class="card-body text-center">
+                        {% with latest_nihss=patient.nihss_scores.last %}
+                        {% if latest_nihss %}
+                        <h1 class="display-4 mb-0">{{ latest_nihss.score }}</h1>
+                        <p class="text-{% if latest_nihss.score >= 4 %}danger{% else %}success{% endif %}">
+                            {% if latest_nihss.score >= 4 %}
+                            Potential tPA candidate
+                            {% else %}
+                            Mild stroke symptoms
+                            {% endif %}
+                        </p>
+                        {% else %}
+                        <p class="text-muted mb-0">No NIHSS score recorded</p>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Latest Consultation -->
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Latest Consultation</h5>
+                        <small class="text-muted">
+                            {% with latest_consult=patient.consultations.last %}
+                            {% if latest_consult %}
+                            {{ latest_consult.created_at|timesince }} ago
+                            {% endif %}
+                            {% endwith %}
+                        </small>
+                    </div>
+                    <div class="card-body">
+                        {% with latest_consult=patient.consultations.last %}
+                        {% if latest_consult %}
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Neurologist</dt>
+                            <dd class="col-sm-8">{{ latest_consult.neurologist.get_full_name }}</dd>
+                            
+                            <dt class="col-sm-4">Diagnosis</dt>
+                            <dd class="col-sm-8">{{ latest_consult.diagnosis }}</dd>
+                            
+                            <dt class="col-sm-4">Treatment</dt>
+                            <dd class="col-sm-8">{{ latest_consult.treatment_plan }}</dd>
+                            
+                            <dt class="col-sm-4">tPA Given</dt>
+                            <dd class="col-sm-8">
+                                {% if latest_consult.tpa_administered %}
+                                <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                <span class="badge bg-danger">No</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                        {% else %}
+                        <p class="text-muted mb-0">No consultations recorded</p>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vital Signs Tab -->
+    <div class="tab-pane fade" id="vitals" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Blood Pressure</th>
+                                <th>Heart Rate</th>
+                                <th>Respiratory Rate</th>
+                                <th>SpO2</th>
+                                <th>Temperature</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vital in patient.vital_signs.all|dictsortreversed:"recorded_at" %}
+                            <tr>
+                                <td>{{ vital.recorded_at|date:"M j, Y g:i a" }}</td>
+                                <td>{{ vital.blood_pressure_systolic }}/{{ vital.blood_pressure_diastolic }}</td>
+                                <td>{{ vital.heart_rate }}</td>
+                                <td>{{ vital.respiratory_rate }}</td>
+                                <td>{{ vital.oxygen_saturation }}%</td>
+                                <td>{{ vital.temperature }}°F</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">No vital signs recorded</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NIHSS Scores Tab -->
+    <div class="tab-pane fade" id="nihss" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Score</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for score in patient.nihss_scores.all|dictsortreversed:"recorded_at" %}
+                            <tr>
+                                <td>{{ score.recorded_at|date:"M j, Y g:i a" }}</td>
+                                <td>{{ score.score }}</td>
+                                <td>
+                                    <span class="badge bg-{% if score.score >= 4 %}danger{% else %}success{% endif %}">
+                                        {% if score.score >= 4 %}
+                                        Potential tPA candidate
+                                        {% else %}
+                                        Mild stroke symptoms
+                                        {% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center">No NIHSS scores recorded</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consultations Tab -->
+    <div class="tab-pane fade" id="consultations" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Neurologist</th>
+                                <th>Diagnosis</th>
+                                <th>Treatment Plan</th>
+                                <th>tPA Given</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for consult in patient.consultations.all|dictsortreversed:"created_at" %}
+                            <tr>
+                                <td>{{ consult.created_at|date:"M j, Y g:i a" }}</td>
+                                <td>{{ consult.neurologist.get_full_name }}</td>
+                                <td>{{ consult.diagnosis|truncatechars:50 }}</td>
+                                <td>{{ consult.treatment_plan|truncatechars:50 }}</td>
+                                <td>
+                                    <span class="badge bg-{% if consult.tpa_administered %}success{% else %}danger{% endif %}">
+                                        {% if consult.tpa_administered %}Yes{% else %}No{% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">No consultations recorded</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Tab -->
+    <div class="tab-pane fade" id="alerts" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <div class="list-group">
+                    {% for alert in patient.alerts.all|dictsortreversed:"created_at" %}
+                    <div class="list-group-item {% if alert.alert_type == 'CRITICAL' %}list-group-item-danger{% endif %}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">
+                                {% if alert.alert_type == 'CRITICAL' %}
+                                <i class="fas fa-exclamation-circle text-danger"></i>
+                                {% elif alert.alert_type == 'WARNING' %}
+                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                {% else %}
+                                <i class="fas fa-info-circle text-info"></i>
+                                {% endif %}
+                                {{ alert.message }}
+                            </h6>
+                            <small>{{ alert.created_at|timesince }} ago</small>
+                        </div>
+                        {% if alert.acknowledged %}
+                        <small class="text-muted">
+                            Acknowledged by {{ alert.acknowledged_by.get_full_name }} {{ alert.acknowledged_at|timesince }} ago
+                        </small>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-primary acknowledge-alert mt-2" data-alert-id="{{ alert.id }}">
+                            Acknowledge
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-muted mb-0">No alerts recorded</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Handle alert acknowledgment
+        $('.acknowledge-alert').click(function() {
+            const alertId = $(this).data('alert-id');
+            const button = $(this);
+            
+            $.post(`/api/alerts/${alertId}/acknowledge/`, function(data) {
+                button.replaceWith(`<small class="text-muted">Acknowledged by {{ user.get_full_name|default:user.username }} just now</small>`);
+                updateAlertCount();
+            });
+        });
+
+        // Activate tab from URL hash
+        let hash = window.location.hash;
+        if (hash) {
+            $('.nav-tabs a[href="' + hash + '"]').tab('show');
+        }
+
+        // Update URL hash when tab changes
+        $('.nav-tabs a').on('shown.bs.tab', function (e) {
+            window.location.hash = e.target.hash;
+        });
+    });
+</script>
+{% endblock %} 
