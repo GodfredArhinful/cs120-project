@@ -36,7 +36,7 @@ class NIHSSScoreSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ConsultationSerializer(serializers.ModelSerializer):
-    neurologist = UserSerializer(read_only=True)
+    consulting_doctor = UserSerializer(read_only=True)
     
     class Meta:
         model = Consultation

@@ -165,7 +165,7 @@ class ConsultationViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(neurologist=self.request.user)
+        serializer.save(consulting_doctor=self.request.user)
 
 class AlertViewSet(viewsets.ModelViewSet):
     queryset = Alert.objects.all()
